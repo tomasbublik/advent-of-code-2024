@@ -1,5 +1,3 @@
-package cz.tomasbublik
-
 import readInput
 
 enum class Direction(val deltaRow: Int, val deltaCol: Int) {

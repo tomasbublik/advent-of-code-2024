@@ -1,7 +1,5 @@
-package cz.tomasbublik
-
 import readInput
-
+import kotlin.math.pow
 
 fun main() {
 
@@ -101,6 +99,133 @@ fun main() {
         return output.joinToString(",")
     }
 
+    class Debugger(var A: Long, var B: Long, var C: Long, val program: List<Long>) {
+        var instructorPointer = 0L
+        val output = mutableListOf<Long>()
+
+        private fun intDivide(): Long {
+            val numerator = A
+            var denominator = getComboOperand()
+            val denominatorLong = 2.0.pow(denominator.toDouble()).toLong()
+            if (denominatorLong == 0L) {
+                return 0L
+            }
+            return numerator / denominatorLong // Dělení Long čísly
+        }
+
+        private fun getComboOperand(): Long {
+            val value = program[instructorPointer.toInt()]
+            instructorPointer++
+            return when (value) {
+                in 0L..3L -> value
+                4L -> A
+                5L -> B
+                6L -> C
+                else -> throw Exception("Invalid argument")
+            }
+        }
+
+        private fun getLiteral(): Long {
+            val value = program[instructorPointer.toInt()]
+            if (value !in 0..7) throw Exception("Invalid argument")
+            instructorPointer++
+            return value
+        }
+
+        fun adv() {
+            A = intDivide()
+        }
+
+        fun bxl() {
+            val literal = getLiteral()
+            B = B xor literal.toLong()
+        }
+
+        fun bst() {
+            val combo = getComboOperand()
+            B = (combo % 8).toLong()
+        }
+
+        fun jnz() {
+            val jump = A
+            val nextIndex = getLiteral()
+            if (jump != 0L) {
+                instructorPointer = nextIndex
+            }
+        }
+
+        fun bxc() {
+            getLiteral() // increments pointer for legacy reasons
+            B = B xor C
+        }
+
+        fun out() {
+            val combo = getComboOperand()
+            output.add(combo % 8)
+        }
+
+        fun bdv() {
+            B = intDivide()
+        }
+
+        fun cdv() {
+            C = intDivide()
+        }
+
+        fun doInstruction() {
+            val instruction = getLiteral()
+            when (instruction) {
+                0L -> adv()
+                1L -> bxl()
+                2L -> bst()
+                3L -> jnz()
+                4L -> bxc()
+                5L -> out()
+                6L -> bdv()
+                7L -> cdv()
+                else -> throw Exception("Invalid instruction")
+            }
+        }
+
+        fun halt(): Boolean = instructorPointer >= program.size
+    }
+
+    fun programStringToList(programStr: String): List<Long> =
+        programStr.split(",").map { it.toLong() }
+
+    fun runDebugger(a: Long, b: Long, c: Long, programStr: String): List<Long> { // Změna typu parametrů
+        val program = programStringToList(programStr)
+        val debugger = Debugger(a, b, c, program)
+        while (!debugger.halt()) {
+            debugger.doInstruction()
+        }
+        return debugger.output
+    }
+
+    fun reverseDebugger(input: String) {
+        val program = programStringToList(input)
+        val programLength = program.size
+        var valid = listOf(0L) // Změna typu listu
+
+        for (length in 1..programLength) {
+            val oldValid = valid
+            valid = mutableListOf()
+            for (num in oldValid) {
+                for (offset in 0..7) {
+                    val next = 8 * num + offset
+                    val output = runDebugger(next, 0, 0, input)
+                    val second = program.subList(programLength - length, programLength)
+                    if (output == second) {
+                        valid.add(next)
+                    }
+                }
+            }
+        }
+
+        val answer = valid.minOrNull() ?: 0L
+        println(answer)
+    }
+
     fun part1(input: List<String>): Int {
 
 //        val input = listOf("0","1","5","4","3","0")
@@ -116,164 +241,7 @@ fun main() {
         return 0
     }
 
-    class Debugger(var A: Int, var B: Int, var C: Int, val program: List<Int>) {
-        var instructorPointer = 0
-        val output = mutableListOf<Int>()
-
-        fun getComboOperand(): Int {
-            val value = program[instructorPointer]
-            return when {
-                value in 0..3 -> {
-                    instructorPointer++
-                    value
-                }
-
-                value == 4 -> {
-                    instructorPointer++
-                    A
-                }
-
-                value == 5 -> {
-                    instructorPointer++
-                    B
-                }
-
-                value == 6 -> {
-                    instructorPointer++
-                    C
-                }
-
-                else -> {
-                    throw Exception("Invalid argument")
-                }
-            }
-        }
-
-        fun getLiteral(): Int {
-            val value = program[instructorPointer]
-            if (value < -1 || value > 7) throw Exception("Invalid argument")
-            instructorPointer++
-            return value
-        }
-
-        fun intDivide(): Int {
-            val numerator = A
-            val denominatorVal = getComboOperand()
-            val denominator = 1 shl denominatorVal
-            val result = numerator / denominator
-            return result
-        }
-
-        fun adv() {
-            val valRes = intDivide()
-            A = valRes
-        }
-
-        fun bxl() {
-            val currentB = B
-            val literal = getLiteral()
-            val result = currentB xor literal
-            B = result
-        }
-
-        fun bst() {
-            val combo = getComboOperand()
-            val result = combo % 8
-            B = result
-        }
-
-        fun jnz() {
-            val jump = A
-            val nextIndex = getLiteral()
-            if (jump != 0) {
-                instructorPointer = nextIndex
-            }
-        }
-
-        fun bxc() {
-            val result = B xor C
-            getLiteral() // increments pointer for legacy reasons
-            B = result
-        }
-
-        fun out() {
-            val combo = getComboOperand()
-            val result = combo % 8
-            output.add(result)
-        }
-
-        fun bdv() {
-            B = intDivide()
-        }
-
-        fun cdv() {
-            C = intDivide()
-        }
-
-        fun doInstruction() {
-            val instruction = getLiteral()
-            when (instruction) {
-                0 -> adv()
-                1 -> bxl()
-                2 -> bst()
-                3 -> jnz()
-                4 -> bxc()
-                5 -> out()
-                6 -> bdv()
-                7 -> cdv()
-            }
-        }
-
-        fun printout(): String {
-            return output.joinToString(",")
-        }
-
-        fun halt(): Boolean {
-            if (instructorPointer >= program.size) {
-                return true
-            }
-            return false
-        }
-    }
-
-    fun programStringToList(programStr: String): List<Int> {
-        return programStr.split(",").map { it.trim().toInt() }
-    }
-
-    fun runDebugger(a: Int, b: Int, c: Int, programStr: String): List<Int> {
-        val program = programStringToList(programStr)
-        val debugger = Debugger(a, b, c, program)
-        while (!debugger.halt()) {
-            debugger.doInstruction()
-        }
-        return debugger.output
-    }
-
-    fun reverseDebugger(input: String) {
-        val program = programStringToList(input)
-        val programLength = program.size
-        var valid = listOf(0)
-        for (length in 1..programLength) {
-            val oldvalid = valid
-            val newvalid = mutableListOf<Int>()
-            for (num in oldvalid) {
-                for (offset in 0 until 8) {
-                    val next = 8 * num + offset
-                    val output = runDebugger(next, 0, 0, input)
-                    val second = program.takeLast(length)
-                    if (output == second) {
-                        newvalid.add(next)
-                    }
-                }
-            }
-            valid = newvalid
-        }
-        val answer = valid.minOrNull() ?: throw Exception("No valid found")
-        println(answer)
-    }
-
     fun part2(input: List<String>): Int {
-        println(runDebugger(729, 0, 0, "0,1,5,4,3,0"))
         reverseDebugger("2,4,1,6,7,5,4,6,1,4,5,5,0,3,3,0")
 
         return 0

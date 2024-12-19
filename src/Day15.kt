@@ -1,5 +1,3 @@
-package cz.tomasbublik
-
 import readInput
 
 fun main() {

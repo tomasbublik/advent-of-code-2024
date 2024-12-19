@@ -1,5 +1,3 @@
-package cz.tomasbublik
-
 import readInput
 import kotlin.math.absoluteValue
 
